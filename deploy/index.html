@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Expense Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@100..125,400..900&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#0F2A33;--ink-3:#0A1E25;
+  --paper:#EDE6D8;--dim:#93A8AE;--faint:#4A626B;
+  --marigold:#E9A61B;--brick:#C1443A;--sage:#6E9C82;
+  --line:rgba(237,230,216,.13);--line-2:rgba(237,230,216,.28);
+}
+[data-theme="light"]{
+  --ink:#F4F1E9;--ink-3:#EAE5D8;
+  --paper:#1C2E33;--dim:#5E7178;--faint:#A7B4B0;
+  --marigold:#B87708;--brick:#B23A30;--sage:#3F7357;
+  --line:rgba(28,46,51,.12);--line-2:rgba(28,46,51,.24);
+}
+html{transition:background .2s}
+body{transition:background .2s,color .2s}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--ink);color:var(--paper);font-family:"IBM Plex Sans",system-ui,sans-serif;font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased}
+.wrap{max-width:960px;margin:0 auto;padding:0 24px 64px}
+
+.masthead{display:flex;flex-wrap:wrap;gap:10px;justify-content:space-between;align-items:center;padding:30px 0 14px;border-bottom:1px solid var(--line-2)}
+.masthead h1{font-family:"Archivo",sans-serif;font-variation-settings:"wdth" 110,"wght" 700;font-size:24px;letter-spacing:-.02em}
+.mast-right{display:flex;align-items:center;gap:10px}
+.iconbtn{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;color:var(--dim);background:none;border:1px solid var(--line-2);border-radius:2px;cursor:pointer;transition:.15s}
+.iconbtn:hover{border-color:var(--marigold);color:var(--marigold)}
+.iconbtn svg{display:block}
+.refresh{order:2}
+.refresh:disabled{opacity:.5;cursor:default}
+.refresh:disabled:hover{border-color:var(--line-2);color:var(--dim)}
+.refresh.spin svg{animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+#theme .ic-sun{display:none}
+[data-theme="light"] #theme .ic-moon{display:none}
+[data-theme="light"] #theme .ic-sun{display:block}
+.stamp{font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim)}
+.stamp .live{color:var(--sage)}
+.stamp .snap{color:var(--marigold)}
+
+/* filter bar */
+.bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:16px 0;border-bottom:1px solid var(--line)}
+.bar label{font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:var(--dim);margin-right:2px}
+select{background:var(--ink-3);border:1px solid var(--line-2);color:var(--paper);font-family:"IBM Plex Mono",monospace;font-size:12px;padding:6px 10px;border-radius:2px;cursor:pointer}
+.chip{font-family:"IBM Plex Mono",monospace;font-size:11.5px;padding:6px 13px;border:1px solid var(--line-2);background:none;color:var(--dim);cursor:pointer;border-radius:2px;transition:.15s}
+.chip:hover{color:var(--paper);border-color:var(--paper)}
+.chip.on{background:var(--marigold);border-color:var(--marigold);color:var(--ink-3);font-weight:600}
+.divider{width:1px;height:20px;background:var(--line-2);margin:0 4px}
+
+/* KPI */
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line-2);border-bottom:1px solid var(--line-2)}
+.kpis>div{background:var(--ink);padding:17px 18px}
+.kpis .lab{font-family:"IBM Plex Mono",monospace;font-size:9.5px;letter-spacing:.15em;text-transform:uppercase;color:var(--dim)}
+.kpis .val{font-family:"Archivo",sans-serif;font-variation-settings:"wdth" 106,"wght" 700;font-size:27px;letter-spacing:-.02em;margin-top:5px;line-height:1.14}
+.kpis .val small{font-size:13px;color:var(--dim);font-variation-settings:"wdth" 106,"wght" 500}
+.kpis .sub{font-size:11.5px;color:var(--dim);margin-top:3px}
+.up{color:var(--brick)}.down{color:var(--sage)}
+
+.sec{padding:32px 0 0}
+.sec>h2{font-family:"Archivo",sans-serif;font-variation-settings:"wdth" 108,"wght" 640;font-size:17px;margin-bottom:14px;display:flex;align-items:baseline;gap:11px;flex-wrap:wrap}
+.sec>h2 em{font-style:normal;font-family:"IBM Plex Mono",monospace;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);font-variation-settings:normal}
+.toggle{margin-left:auto;font-family:"IBM Plex Mono",monospace;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;background:none;border:none;color:var(--marigold);cursor:pointer}
+.toggle:hover{text-decoration:underline}
+
+/* MoM strip */
+.mom{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.mcard{border:1px solid var(--line-2);padding:13px 15px;cursor:pointer;transition:.15s;text-align:left;background:none;color:inherit;font:inherit}
+.mcard:hover{border-color:var(--paper)}
+.mcard.on{border-color:var(--marigold);background:rgba(233,166,27,.07)}
+.mcard .mo{font-family:"IBM Plex Mono",monospace;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim)}
+.mcard .amt{font-family:"Archivo",sans-serif;font-variation-settings:"wdth" 106,"wght" 700;font-size:21px;margin:4px 0 6px;letter-spacing:-.02em}
+.mcard .chg{font-family:"IBM Plex Mono",monospace;font-size:11.5px}
+.mcard .track{height:4px;background:var(--ink-3);margin-top:9px;border-radius:3px;overflow:hidden}
+.mcard .fill{height:100%;background:var(--marigold);border-radius:3px}
+
+/* Top 5 */
+.top5{border-top:1px solid var(--line-2)}
+.t5{display:grid;grid-template-columns:20px 1fr auto;gap:13px;align-items:baseline;padding:10px 0;border-bottom:1px solid var(--line)}
+.t5 .rk{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--marigold)}
+.t5 .nm{font-size:14px}
+.t5 .nm em{font-style:normal;color:var(--dim);font-size:11.5px;display:block}
+.t5 .vl{font-family:"IBM Plex Mono",monospace;font-size:14px;text-align:right;white-space:nowrap}
+.t5 .vl em{font-style:normal;color:var(--dim);font-size:10.5px;display:block}
+
+/* breakdown */
+.scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.bdhead,.cellrow{display:grid;grid-template-columns:var(--cols);align-items:center;gap:6px;min-width:min-content}
+/* author display:grid above beats the UA rule for [hidden], so restate it */
+[hidden]{display:none!important}
+.bdhead{padding:8px 10px;border-bottom:1px solid var(--line-2)}
+.bdhead span{font-family:"IBM Plex Mono",monospace;font-size:9.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--dim);text-align:right;white-space:nowrap}
+.bdhead span:first-child{text-align:left}
+.bdhead span.sel{color:var(--marigold)}
+.cellrow{padding:10px 10px;border-bottom:1px solid var(--line)}
+button.cellrow{width:100%;background:none;border:none;border-bottom:1px solid var(--line);color:inherit;font:inherit;cursor:pointer;text-align:left}
+button.cellrow:hover{background:rgba(237,230,216,.045)}
+.num{font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums;text-align:right;font-size:12.5px;white-space:nowrap}
+.dimnum{color:var(--dim)}
+.zero{color:var(--faint)}
+.selcol{color:var(--marigold)}
+.nm-cell{display:flex;align-items:center;gap:8px;min-width:0}
+.tw{width:9px;flex:none;color:var(--marigold);font-size:9px;transition:transform .16s;display:inline-block}
+.tw.open{transform:rotate(90deg)}
+.lvl1{font-weight:500;font-size:14px}
+.lvl1.unused{color:var(--faint);font-weight:400}
+.lvl1.unused .tw{color:var(--faint)}
+.lvl2{background:rgba(10,30,37,.55)}
+.lvl2 .nm-cell{padding-left:19px;font-size:13.5px}
+.lvl2.unused{color:var(--faint)}
+.lvl3{background:rgba(10,30,37,.85)}
+.lvl3 .nm-cell{padding-left:46px;font-size:12.5px;color:var(--dim)}
+.bdfoot .cellrow{border-bottom:none;border-top:1px solid var(--line-2);font-weight:600;padding-top:11px}
+.flag{display:inline-block;font-family:"IBM Plex Mono",monospace;font-size:9px;padding:1px 6px;border:1px solid var(--brick);color:var(--brick);border-radius:2px;margin-left:7px;vertical-align:1px}
+
+.microhint{color:var(--dim);font-size:12px;margin:-6px 0 14px;max-width:60ch}
+.split{display:grid;grid-template-columns:1fr 1fr;gap:34px}
+
+/* pareto */
+.pareto-bars{display:flex;flex-direction:column;gap:7px;margin-top:2px}
+.pb{display:grid;grid-template-columns:120px 1fr 66px;gap:10px;align-items:center}
+.pb .pl{font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pb .ptrack{height:15px;background:var(--ink-3);border-radius:2px;overflow:hidden;position:relative}
+.pb .pfill{height:100%;background:var(--marigold);border-radius:2px}
+.pb.rest .pfill{background:var(--faint)}
+.pb .pv{font-family:"IBM Plex Mono",monospace;font-size:11.5px;text-align:right;color:var(--dim)}
+.pareto-note{margin-top:14px;padding:12px 14px;border-left:2px solid var(--marigold);background:rgba(233,166,27,.06);font-size:13px}
+.pareto-note b{font-weight:600}
+
+/* weekday/weekend */
+.ww-cards{display:flex;gap:14px}
+.ww-c{flex:1;border:1px solid var(--line-2);padding:15px 16px}
+.ww-c.we{border-left:3px solid var(--sage)}
+.ww-c.wd{border-left:3px solid var(--marigold)}
+.ww-c .wl{font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:var(--dim)}
+.ww-c .wv{font-family:"Archivo",sans-serif;font-variation-settings:"wdth" 106,"wght" 700;font-size:22px;margin:5px 0 2px;letter-spacing:-.02em}
+.ww-c .ws{font-size:12px;color:var(--dim)}
+.ww-verdict{margin-top:13px;font-size:13px;color:var(--paper)}
+.ww-verdict b{color:var(--sage)}
+
+/* growth */
+.grow-list{display:flex;flex-direction:column;gap:1px;background:var(--line-2);border:1px solid var(--line-2)}
+.grow-row{background:var(--ink);padding:11px 14px;display:grid;grid-template-columns:1fr auto;gap:8px;align-items:baseline}
+.grow-row .gn{font-size:14px}
+.grow-row .gn em{font-style:normal;font-family:"IBM Plex Mono",monospace;font-size:11.5px;color:var(--dim);display:block;margin-top:1px}
+.grow-row .gp{font-family:"IBM Plex Mono",monospace;font-size:15px;text-align:right;white-space:nowrap}
+.grow-row .gp.up{color:var(--brick)}.grow-row .gp.down{color:var(--sage)}
+
+@media (max-width:820px){ .split{grid-template-columns:1fr;gap:0} .ww-cards{flex-direction:column} }
+
+.foot{margin-top:32px;padding-top:18px;border-top:1px solid var(--line);color:var(--dim);font-size:12px;line-height:1.65;max-width:78ch}
+.foot b{color:var(--paper);font-weight:500}
+.foot code{font-family:"IBM Plex Mono",monospace;font-size:11px;background:var(--ink-3);padding:1px 5px;border-radius:2px}
+
+@media (max-width:820px){
+  .kpis{grid-template-columns:1fr 1fr}
+  .wrap{padding:0 15px 56px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+:focus-visible{outline:2px solid var(--marigold);outline-offset:2px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="masthead">
+  <h1>Expense Dashboard</h1>
+  <div class="mast-right">
+    <button class="iconbtn" id="theme" title="Toggle light / dark" aria-label="Toggle light or dark theme">
+      <svg class="ic-moon" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      <svg class="ic-sun" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4.2"/><path d="M12 2v2M12 20v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M2 12h2M20 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4"/></svg>
+    </button>
+    <button class="iconbtn refresh" id="refresh" title="Refresh from Google Sheet" aria-label="Refresh from Google Sheet">
+      <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg>
+    </button>
+    <div class="stamp" id="stamp"></div>
+  </div>
+</header>
+
+<div class="bar">
+  <label for="yr">Year</label>
+  <select id="yr"></select>
+  <span class="divider"></span>
+  <label>Month</label>
+  <span id="months"></span>
+</div>
+
+<div class="kpis" id="kpis"></div>
+
+<section class="sec">
+  <h2>Month on month <em id="momlab"></em></h2>
+  <div class="mom" id="mom"></div>
+</section>
+
+<section class="sec">
+  <h2>Top 5 expenses <em id="t5lab"></em></h2>
+  <div class="top5" id="top5"></div>
+</section>
+
+<section class="sec">
+  <h2>Category breakdown <em>click a row to expand</em>
+    <button class="toggle" id="tgUnused">Hide unused</button>
+  </h2>
+  <div class="scroll">
+    <div class="bdhead" id="bdhead"></div>
+    <div id="bd"></div>
+    <div class="bdfoot" id="bdfoot"></div>
+  </div>
+</section>
+
+<div class="split">
+  <section class="sec">
+    <h2>Savings opportunity <em>top avoidable</em></h2>
+    <p class="microhint">Discretionary rows only — eating out, treats, personal. Committed costs (family, bills, BC, medical, baby, vehicle) are never listed here. You decide which are truly avoidable.</p>
+    <div class="top5" id="avoid"></div>
+  </section>
+
+  <section class="sec">
+    <h2>Where the money concentrates <em>Pareto 80 / 20</em></h2>
+    <div id="pareto"></div>
+  </section>
+</div>
+
+<div class="split">
+  <section class="sec">
+    <h2>Weekday vs weekend</h2>
+    <div id="ww"></div>
+  </section>
+
+  <section class="sec">
+    <h2>Fastest growing <em id="growLab"></em></h2>
+    <div id="grow"></div>
+  </section>
+</div>
+
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════════════════
+   1. DATA SOURCE
+   Leave null to use the embedded snapshot below.
+   Set to your endpoint (e.g. '/.netlify/functions/sheet')
+   to pull live from Google Sheets. Nothing else changes.
+   ═══════════════════════════════════════════════════════════ */
+const DATA_SOURCE = '/.netlify/functions/sheet';
+
+/* Full taxonomy from the sheet's lookup tab — categories and
+   sub-categories appear even when nothing was spent on them. */
+const TAXONOMY = {
+  "Home Expenses":       ["Papa","Electricity","Fahila","Ammi","Internet Bill","Musfirah","Gas","Home Expenses"],
+  "Others":              ["Others"],
+  "BC":                  ["BC"],
+  "Monthly Expenses":    ["Azhar"],
+  "Food":                ["Food","Cheezain","Fitness"],
+  "Vehicle":             ["Maintenance","Fuel"],
+  "Health Care/Medical": ["Health Care/Medical"],
+  "Babycare":            ["Babycare"],
+  "Dressing":            ["Clothes"],
+  "Gulmohar":            ["Gulmohar"],
+  "Azhar":               ["Lunch"]
+};
+
+const SNAPSHOT = [{"yr":2026,"mo":5,"dy":2,"de":"Pampers","ca":"Home Expenses","sc":"Musfirah","am":200},{"yr":2026,"mo":5,"dy":2,"de":"Lactogen","ca":"Home Expenses","sc":"Musfirah","am":800},{"yr":2026,"mo":5,"dy":2,"de":"Dinner","ca":"Food","sc":"Food","am":2250},{"yr":2026,"mo":5,"dy":4,"de":"Petrol","ca":"Monthly Expenses","sc":"Azhar","am":490},{"yr":2026,"mo":5,"dy":4,"de":"Owaisi Medicines","ca":"Health Care/Medical","sc":"Health Care/Medical","am":250},{"yr":2026,"mo":5,"dy":4,"de":"Pedialyte","ca":"Home Expenses","sc":"Musfirah","am":200},{"yr":2026,"mo":5,"dy":4,"de":"Bananas","ca":"Monthly Expenses","sc":"Azhar","am":100},{"yr":2026,"mo":5,"dy":4,"de":"FRC","ca":"Others","sc":"Others","am":1000},{"yr":2026,"mo":5,"dy":4,"de":"CRC","ca":"Others","sc":"Others","am":500},{"yr":2026,"mo":5,"dy":4,"de":"Internet Bill","ca":"Home Expenses","sc":"Internet Bill","am":3200},{"yr":2026,"mo":5,"dy":4,"de":"SSGC","ca":"Home Expenses","sc":"Gas","am":3980},{"yr":2026,"mo":5,"dy":4,"de":"Electricity Bill","ca":"Home Expenses","sc":"Electricity","am":13581},{"yr":2026,"mo":5,"dy":4,"de":"BC","ca":"BC","sc":"BC","am":17000},{"yr":2026,"mo":5,"dy":4,"de":"Fahila","ca":"Home Expenses","sc":"Fahila","am":6000},{"yr":2026,"mo":5,"dy":4,"de":"Ammi","ca":"Home Expenses","sc":"Ammi","am":5000},{"yr":2026,"mo":5,"dy":4,"de":"Papa","ca":"Home Expenses","sc":"Papa","am":40000},{"yr":2026,"mo":5,"dy":4,"de":"Owaisi Medicine","ca":"Health Care/Medical","sc":"Health Care/Medical","am":250},{"yr":2026,"mo":5,"dy":5,"de":"Bananas","ca":"Monthly Expenses","sc":"Azhar","am":200},{"yr":2026,"mo":5,"dy":5,"de":"Yogurt","ca":"Monthly Expenses","sc":"Azhar","am":100},{"yr":2026,"mo":5,"dy":5,"de":"Pamper wipes and milk","ca":"Home Expenses","sc":"Musfirah","am":1200},{"yr":2026,"mo":5,"dy":7,"de":"Burger + Shawarma + Limca","ca":"Food","sc":"Food","am":640},{"yr":2026,"mo":5,"dy":9,"de":"Bananas","ca":"Monthly Expenses","sc":"Azhar","am":100},{"yr":2026,"mo":5,"dy":9,"de":"Rides","ca":"Monthly Expenses","sc":"Azhar","am":250},{"yr":2026,"mo":5,"dy":9,"de":"Eggs","ca":"Monthly Expenses","sc":"Azhar","am":100},{"yr":2026,"mo":5,"dy":9,"de":"Shampoo + Facewash","ca":"Home Expenses","sc":"Home Expenses","am":2500},{"yr":2026,"mo":5,"dy":10,"de":"Fries","ca":"Monthly Expenses","sc":"Azhar","am":200},{"yr":2026,"mo":5,"dy":11,"de":"Samosay","ca":"Monthly Expenses","sc":"Azhar","am":300},{"yr":2026,"mo":5,"dy":12,"de":"Pulao","ca":"Monthly Expenses","sc":"Azhar","am":400},{"yr":2026,"mo":5,"dy":13,"de":"Cheez","ca":"Monthly Expenses","sc":"Azhar","am":150},{"yr":2026,"mo":5,"dy":13,"de":"Fries","ca":"Monthly Expenses","sc":"Azhar","am":150},{"yr":2026,"mo":5,"dy":13,"de":"Pedialyte","ca":"Home Expenses","sc":"Musfirah","am":200},{"yr":2026,"mo":5,"dy":13,"de":"Chapati","ca":"Monthly Expenses","sc":"Azhar","am":140},{"yr":2026,"mo":5,"dy":13,"de":"Haircut","ca":"Monthly Expenses","sc":"Azhar","am":400},{"yr":2026,"mo":5,"dy":13,"de":"Carwash","ca":"Monthly Expenses","sc":"Azhar","am":500},{"yr":2026,"mo":5,"dy":13,"de":"Bread + Eggs","ca":"Monthly Expenses","sc":"Azhar","am":110},{"yr":2026,"mo":5,"dy":13,"de":"Cheezain","ca":"Monthly Expenses","sc":"Azhar","am":240},{"yr":2026,"mo":5,"dy":13,"de":"Gym Fees","ca":"Monthly Expenses","sc":"Azhar","am":2000},{"yr":2026,"mo":5,"dy":19,"de":"Bykea","ca":"Monthly Expenses","sc":"Azhar","am":300},{"yr":2026,"mo":5,"dy":19,"de":"Car Transfer","ca":"Others","sc":"Others","am":18000},{"yr":2026,"mo":5,"dy":24,"de":"Musfirah","ca":"Home Expenses","sc":"Musfirah","am":1000},{"yr":2026,"mo":5,"dy":24,"de":"Exam fees + Enrollment fees","ca":"Others","sc":"Others","am":6500},{"yr":2026,"mo":6,"dy":1,"de":"Shawarma","ca":"Monthly Expenses","sc":"Azhar","am":180},{"yr":2026,"mo":6,"dy":1,"de":"Chaara","ca":"Monthly Expenses","sc":"Azhar","am":350},{"yr":2026,"mo":6,"dy":1,"de":"Nebix Medicine","ca":"Monthly Expenses","sc":"Azhar","am":150},{"yr":2026,"mo":6,"dy":1,"de":"Shawarma","ca":"Monthly Expenses","sc":"Azhar","am":320},{"yr":2026,"mo":6,"dy":1,"de":"Fahila Kifaya (Chaand Raat)","ca":"Others","sc":"Others","am":850},{"yr":2026,"mo":6,"dy":1,"de":"Bleach","ca":"Monthly Expenses","sc":"Azhar","am":50},{"yr":2026,"mo":6,"dy":1,"de":"Papa","ca":"Home Expenses","sc":"Papa","am":40000},{"yr":2026,"mo":6,"dy":1,"de":"Ammi","ca":"Home Expenses","sc":"Ammi","am":5000},{"yr":2026,"mo":6,"dy":1,"de":"Fahila","ca":"Home Expenses","sc":"Fahila","am":6000},{"yr":2026,"mo":6,"dy":1,"de":"Car Rent","ca":"Others","sc":"Others","am":3500},{"yr":2026,"mo":6,"dy":1,"de":"Breakfast (Eid)","ca":"Monthly Expenses","sc":"Azhar","am":2000},{"yr":2026,"mo":6,"dy":1,"de":"BBQ (Eid)","ca":"Monthly Expenses","sc":"Azhar","am":2000},{"yr":2026,"mo":6,"dy":1,"de":"Petrol","ca":"Vehicle","sc":"Maintenance","am":500},{"yr":2026,"mo":6,"dy":1,"de":"Passport","ca":"Others","sc":"Others","am":13500},{"yr":2026,"mo":6,"dy":1,"de":"Cheezain","ca":"Monthly Expenses","sc":"Azhar","am":120},{"yr":2026,"mo":6,"dy":1,"de":"BC","ca":"BC","sc":"BC","am":17000},{"yr":2026,"mo":6,"dy":1,"de":"Electricity Bill","ca":"Home Expenses","sc":"Electricity","am":17160},{"yr":2026,"mo":6,"dy":1,"de":"Internet Bill","ca":"Home Expenses","sc":"Internet Bill","am":1600},{"yr":2026,"mo":6,"dy":1,"de":"Musfirah Medicine","ca":"Health Care/Medical","sc":"Health Care/Medical","am":200},{"yr":2026,"mo":6,"dy":3,"de":"Printing for passports","ca":"Others","sc":"Others","am":290},{"yr":2026,"mo":6,"dy":3,"de":"Biscuits + Juice (Passport office)","ca":"Others","sc":"Others","am":100},{"yr":2026,"mo":6,"dy":3,"de":"Lassi","ca":"Monthly Expenses","sc":"Azhar","am":280},{"yr":2026,"mo":6,"dy":3,"de":"Fries","ca":"Food","sc":"Food","am":200},{"yr":2026,"mo":6,"dy":4,"de":"Cheez","ca":"Food","sc":"Food","am":100},{"yr":2026,"mo":6,"dy":4,"de":"Wo","ca":"Monthly Expenses","sc":"Azhar","am":150},{"yr":2026,"mo":6,"dy":4,"de":"Lassi","ca":"Food","sc":"Food","am":170},{"yr":2026,"mo":6,"dy":5,"de":"Lunch","ca":"Food","sc":"Food","am":600},{"yr":2026,"mo":6,"dy":8,"de":"Pizza","ca":"Food","sc":"Food","am":500},{"yr":2026,"mo":6,"dy":8,"de":"Owaisi Medicine","ca":"Health Care/Medical","sc":"Health Care/Medical","am":250},{"yr":2026,"mo":6,"dy":8,"de":"Petrol","ca":"Vehicle","sc":"Maintenance","am":400},{"yr":2026,"mo":6,"dy":8,"de":"Pen","ca":"Monthly Expenses","sc":"Azhar","am":40},{"yr":2026,"mo":6,"dy":8,"de":"Medicine Owaisi","ca":"Monthly Expenses","sc":"Azhar","am":250},{"yr":2026,"mo":6,"dy":9,"de":"Gloves and Socks (F)","ca":"Monthly Expenses","sc":"Azhar","am":200},{"yr":2026,"mo":6,"dy":9,"de":"Musfirah's toy","ca":"Monthly Expenses","sc":"Azhar","am":200},{"yr":2026,"mo":6,"dy":9,"de":"Petrol","ca":"Vehicle","sc":"Maintenance","am":200},{"yr":2026,"mo":6,"dy":10,"de":"Petrol","ca":"Vehicle","sc":"Maintenance","am":150},{"yr":2026,"mo":6,"dy":16,"de":"Chips + Cake","ca":"Monthly Expenses","sc":"Azhar","am":90},{"yr":2026,"mo":6,"dy":16,"de":"Petrol","ca":"Vehicle","sc":"Maintenance","am":350},{"yr":2026,"mo":6,"dy":21,"de":"7up","ca":"Others","sc":"Others","am":200},{"yr":2026,"mo":6,"dy":21,"de":"Noodles","ca":"Monthly Expenses","sc":"Azhar","am":120},{"yr":2026,"mo":7,"dy":2,"de":"Lunch","ca":"Monthly Expenses","sc":"Azhar","am":850},{"yr":2026,"mo":7,"dy":2,"de":"Milk + Diapers + Wipes + Black Shoppers","ca":"Monthly Expenses","sc":"Azhar","am":1000},{"yr":2026,"mo":7,"dy":3,"de":"Lunch","ca":"Monthly Expenses","sc":"Azhar","am":700},{"yr":2026,"mo":7,"dy":3,"de":"Milk + Diapers + Wipes","ca":"Home Expenses","sc":"Musfirah","am":850},{"yr":2026,"mo":7,"dy":4,"de":"Bananas","ca":"Monthly Expenses","sc":"Azhar","am":100},{"yr":2026,"mo":7,"dy":4,"de":"Petrol","ca":"Monthly Expenses","sc":"Azhar","am":200},{"yr":2026,"mo":7,"dy":6,"de":"Dinner (Zeytin)","ca":"Food","sc":"Food","am":6200},{"yr":2026,"mo":7,"dy":6,"de":"Pamper","ca":"Home Expenses","sc":"Musfirah","am":200},{"yr":2026,"mo":7,"dy":6,"de":"Wipes","ca":"Home Expenses","sc":"Musfirah","am":170},{"yr":2026,"mo":7,"dy":6,"de":"Facewash","ca":"Monthly Expenses","sc":"Azhar","am":600},{"yr":2026,"mo":7,"dy":6,"de":"Petrol","ca":"Food","sc":"Food","am":1000},{"yr":2026,"mo":7,"dy":6,"de":"Petrol","ca":"Monthly Expenses","sc":"Azhar","am":300},{"yr":2026,"mo":7,"dy":7,"de":"Petrol","ca":"Monthly Expenses","sc":"Azhar","am":300},{"yr":2026,"mo":7,"dy":7,"de":"Petrol","ca":"Monthly Expenses","sc":"Azhar","am":300},{"yr":2026,"mo":7,"dy":7,"de":"7up","ca":"Food","sc":"Food","am":80},{"yr":2026,"mo":7,"dy":7,"de":"Pepsi","ca":"Food","sc":"Food","am":80},{"yr":2026,"mo":7,"dy":7,"de":"Fries","ca":"Food","sc":"Food","am":300},{"yr":2026,"mo":7,"dy":11,"de":"Lassi","ca":"Food","sc":"Food","am":170},{"yr":2026,"mo":7,"dy":11,"de":"Tomato","ca":"Monthly Expenses","sc":"Azhar","am":100},{"yr":2026,"mo":7,"dy":11,"de":"Bike Maintenance (Battery)","ca":"Vehicle","sc":"Maintenance","am":6500},{"yr":2026,"mo":7,"dy":11,"de":"Oil & Labour","ca":"Vehicle","sc":"Maintenance","am":1400},{"yr":2026,"mo":7,"dy":11,"de":"Chicken 800g","ca":"Monthly Expenses","sc":"Azhar","am":700},{"yr":2026,"mo":7,"dy":11,"de":"Papa","ca":"Home Expenses","sc":"Papa","am":40000},{"yr":2026,"mo":7,"dy":11,"de":"Fahila","ca":"Home Expenses","sc":"Fahila","am":6000},{"yr":2026,"mo":7,"dy":11,"de":"Ammi","ca":"Home Expenses","sc":"Ammi","am":5000},{"yr":2026,"mo":7,"dy":11,"de":"Electricity Bill","ca":"Home Expenses","sc":"Electricity","am":20230},{"yr":2026,"mo":7,"dy":11,"de":"Internet Bill","ca":"Home Expenses","sc":"Internet Bill","am":1600},{"yr":2026,"mo":7,"dy":11,"de":"BC","ca":"BC","sc":"BC","am":10000},{"yr":2026,"mo":7,"dy":11,"de":"Bank Card Charges and SMS Fees","ca":"Others","sc":"Others","am":6500},{"yr":2026,"mo":7,"dy":11,"de":"Dr. Qamar Saeed","ca":"Health Care/Medical","sc":"Health Care/Medical","am":1500},{"yr":2026,"mo":7,"dy":11,"de":"Haveabite","ca":"Food","sc":"Food","am":800},{"yr":2026,"mo":7,"dy":12,"de":"Icecream","ca":"Monthly Expenses","sc":"Azhar","am":110},{"yr":2026,"mo":7,"dy":13,"de":"Medicine Ali Homeo","ca":"Monthly Expenses","sc":"Azhar","am":240},{"yr":2026,"mo":7,"dy":14,"de":"Bread","ca":"Monthly Expenses","sc":"Azhar","am":80},{"yr":2026,"mo":7,"dy":15,"de":"Petrol","ca":"Monthly Expenses","sc":"Azhar","am":230},{"yr":2026,"mo":7,"dy":15,"de":"Kurta","ca":"Monthly Expenses","sc":"Azhar","am":2000},{"yr":2026,"mo":7,"dy":15,"de":"Petrol","ca":"Monthly Expenses","sc":"Azhar","am":300},{"yr":2026,"mo":7,"dy":15,"de":"Kababjees Fried","ca":"Monthly Expenses","sc":"Azhar","am":1600},{"yr":2026,"mo":7,"dy":15,"de":"Engro Meetup","ca":"Monthly Expenses","sc":"Azhar","am":2200},{"yr":2026,"mo":7,"dy":15,"de":"Petrol","ca":"Monthly Expenses","sc":"Azhar","am":250},{"yr":2026,"mo":7,"dy":26,"de":"Picnic","ca":"Others","sc":"Others","am":4000},{"yr":2026,"mo":7,"dy":27,"de":"Petrol","ca":"Monthly Expenses","sc":"Azhar","am":210},{"yr":2026,"mo":7,"dy":28,"de":"Petrol","ca":"Monthly Expenses","sc":"Azhar","am":310},{"yr":2026,"mo":7,"dy":29,"de":"Roll","ca":"Food","sc":"Food","am":240}];
+
+/* ═══════════════════════════════════════════════════════════ */
+const MN={1:'Jan',2:'Feb',3:'Mar',4:'Apr',5:'May',6:'Jun',7:'Jul',8:'Aug',9:'Sep',10:'Oct',11:'Nov',12:'Dec'};
+const fmt=n=>n.toLocaleString('en-US');
+const sum=a=>a.reduce((s,t)=>s+t.am,0);
+const pct=(c,p)=>p?((c-p)/p*100):null;
+const chg=p=>p===null?'<span class="dimnum">—</span>'
+  :`<span class="${p>0?'up':'down'}">${p>0?'▲':'▼'} ${Math.abs(p).toFixed(1)}%</span>`;
+
+let TX=[], state={yr:null,mo:0,showUnused:true}, isLive=false;
+
+/* normalise a raw sheet row into the shape the dashboard uses */
+function normalise(r){
+  const n = v => Number(String(v??'').replace(/[, ]/g,'')) || 0;
+  const am = n(r.Amount ?? r.amount ?? r.am);
+  if(!am) return null;                       // skips the blank Jun-29 row
+  let yr = r.Year, mo = r.Month, dy = r.Day;
+  if(mo==null && r["Date/Month"]!=null){
+    const d = new Date(r["Date/Month"]);
+    if(!isNaN(d)){ yr=d.getFullYear(); mo=d.getMonth()+1; dy=d.getDate(); }
+  }
+  if(!mo) return null;
+  return { yr:+yr, mo:+mo, dy:+dy||1, de:String(r.Description??r.de??'').trim(),
+           ca:String(r.Category??r.ca??'').trim(), sc:String(r["Sub-Category"]??r.sc??'').trim(), am };
+}
+
+async function loadData(){
+  if(!DATA_SOURCE){ TX=SNAPSHOT; isLive=false; return; }
+  const res = await fetch(DATA_SOURCE + (DATA_SOURCE.includes('?')?'&':'?') + 'ts=' + Date.now(), {cache:'no-store'});
+  if(!res.ok) throw new Error('HTTP '+res.status);
+  const raw = await res.json();
+  const parsed = (Array.isArray(raw)?raw:raw.rows).map(normalise).filter(Boolean);
+  if(!parsed.length) throw new Error('no rows returned');
+  TX = parsed; isLive = true;
+}
+
+function stampHTML(){
+  document.getElementById('stamp').innerHTML = isLive
+    ? `<span class="live">● Live</span> &nbsp;·&nbsp; synced ${new Date().toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})} &nbsp;·&nbsp; PKR`
+    : `<span class="snap">◌ Snapshot</span> &nbsp;·&nbsp; ${TX.length} rows &nbsp;·&nbsp; PKR`;
+}
+
+async function refresh(){
+  const btn=document.getElementById('refresh');
+  if(!DATA_SOURCE) return;
+  btn.classList.add('spin'); btn.disabled=true;
+  const prevYr=state.yr, prevMo=state.mo;
+  try{
+    await loadData();
+    const years=[...new Set(TX.map(t=>t.yr))].sort();
+    const ysel=document.getElementById('yr');
+    ysel.innerHTML=years.map(y=>`<option value="${y}">${y}</option>`).join('');
+    state.yr = years.includes(prevYr)?prevYr:years[years.length-1];
+    ysel.value=state.yr;
+    state.mo = monthsIn().includes(prevMo)?prevMo:0;
+    stampHTML(); render();
+  }catch(e){
+    console.warn('Refresh failed:',e);
+    document.getElementById('stamp').innerHTML=`<span style="color:var(--brick)">● Sync failed</span> &nbsp;·&nbsp; showing last data`;
+  }finally{
+    btn.classList.remove('spin'); btn.disabled=false;
+  }
+}
+
+async function boot(){
+  const btn=document.getElementById('refresh');
+  if(!DATA_SOURCE){ btn.disabled=true; btn.title='Set DATA_SOURCE to enable live refresh'; }
+  else btn.onclick=refresh;
+
+  try{ await loadData(); }
+  catch(e){ console.warn('Initial fetch failed, using snapshot.',e); TX=SNAPSHOT; isLive=false; }
+
+  const years=[...new Set(TX.map(t=>t.yr))].sort();
+  state.yr = years[years.length-1];
+  const ysel=document.getElementById('yr');
+  ysel.innerHTML = years.map(y=>`<option value="${y}">${y}</option>`).join('');
+  ysel.value=state.yr;
+  ysel.onchange=()=>{ state.yr=+ysel.value; state.mo=0; render(); };
+
+  stampHTML();
+
+  document.getElementById('tgUnused').onclick=()=>{
+    state.showUnused=!state.showUnused;
+    document.getElementById('tgUnused').textContent = state.showUnused?'Hide unused':'Show all categories';
+    render();
+  };
+  render();
+}
+
+const yearRows = () => TX.filter(t=>t.yr===state.yr);
+const viewRows = () => yearRows().filter(t=>!state.mo || t.mo===state.mo);
+const monthsIn = () => [...new Set(yearRows().map(t=>t.mo))].sort((a,b)=>a-b);
+
+/* ---- month chips ---- */
+function renderChips(){
+  const ms=monthsIn();
+  document.getElementById('months').innerHTML =
+    `<button class="chip ${!state.mo?'on':''}" data-m="0">Full year</button>` +
+    ms.map(m=>`<button class="chip ${state.mo===m?'on':''}" data-m="${m}">${MN[m]}</button>`).join('');
+  document.querySelectorAll('#months .chip').forEach(b=>b.onclick=()=>{state.mo=+b.dataset.m;render();});
+}
+
+/* ---- KPIs ---- */
+function renderKPIs(){
+  const ms=monthsIn(), rows=viewRows(), tot=sum(rows);
+  const catTot={}; rows.forEach(t=>catTot[t.ca]=(catTot[t.ca]||0)+t.am);
+  const top=Object.entries(catTot).sort((a,b)=>b[1]-a[1])[0]||['—',0];
+  let c3,c4;
+  if(state.mo){
+    const i=ms.indexOf(state.mo), prev=i>0?ms[i-1]:null;
+    const pv=prev?sum(yearRows().filter(t=>t.mo===prev)):0;
+    const p=pct(tot,pv);
+    c3=`<div class="lab">vs ${prev?MN[prev]:'previous'}</div>
+        <div class="val ${p>0?'up':'down'}">${p===null?'—':(p>0?'+':'')+p.toFixed(1)+'%'}</div>
+        <div class="sub">${prev?fmt(pv)+' → '+fmt(tot):'no prior month'}</div>`;
+    c4=`<div class="lab">Entries logged</div><div class="val">${rows.length}</div>
+        <div class="sub">avg ${fmt(Math.round(tot/(rows.length||1)))} per entry</div>`;
+  } else {
+    c3=`<div class="lab">Monthly average</div><div class="val">${fmt(Math.round(tot/(ms.length||1)))}</div>
+        <div class="sub">across ${ms.length} month${ms.length>1?'s':''}</div>`;
+    c4=`<div class="lab">Entries logged</div><div class="val">${rows.length}</div>
+        <div class="sub">avg ${fmt(Math.round(tot/(rows.length||1)))} per entry</div>`;
+  }
+  document.getElementById('kpis').innerHTML=`
+    <div><div class="lab">${state.mo?MN[state.mo]+' '+state.yr:state.yr+' total'}</div>
+         <div class="val">${fmt(tot)}</div>
+         <div class="sub">${state.mo?'':'year to date'}</div></div>
+    <div><div class="lab">Biggest category</div>
+         <div class="val">${(top[1]/(tot||1)*100).toFixed(0)}<small>%</small></div>
+         <div class="sub">${top[0]} · ${fmt(top[1])}</div></div>
+    <div>${c3}</div><div>${c4}</div>`;
+}
+
+/* ---- MoM ---- */
+function renderMoM(){
+  const ms=monthsIn();
+  document.getElementById('momlab').textContent=`${ms.length} month${ms.length>1?'s':''} tracked in ${state.yr}`;
+  const vals=ms.map(m=>sum(yearRows().filter(t=>t.mo===m)));
+  const max=Math.max(...vals,1);
+  document.getElementById('mom').innerHTML=ms.map((m,i)=>`
+    <button class="mcard ${state.mo===m?'on':''}" data-m="${m}">
+      <div class="mo">${MN[m]} ${state.yr}</div>
+      <div class="amt">${fmt(vals[i])}</div>
+      <div class="chg">${i?chg(pct(vals[i],vals[i-1]))+' <span class="dimnum">vs '+MN[ms[i-1]]+'</span>':'<span class="dimnum">baseline</span>'}</div>
+      <div class="track"><div class="fill" style="width:${vals[i]/max*100}%"></div></div>
+    </button>`).join('');
+  document.querySelectorAll('.mcard').forEach(b=>b.onclick=()=>{
+    state.mo = state.mo===+b.dataset.m ? 0 : +b.dataset.m; render();
+  });
+}
+
+/* ---- Top 5 ---- */
+function renderTop5(){
+  const rows=viewRows(), tot=sum(rows)||1;
+  document.getElementById('t5lab').textContent = state.mo ? `${MN[state.mo]} ${state.yr}` : `${state.yr}, grouped by description`;
+  let items;
+  if(state.mo){
+    items=[...rows].sort((a,b)=>b.am-a.am).slice(0,5)
+      .map(t=>({nm:t.de,meta:`${t.ca} › ${t.sc} · ${MN[t.mo]} ${t.dy}`,am:t.am}));
+  } else {
+    const g=new Map();
+    rows.forEach(t=>{const k=t.de.toLowerCase();
+      if(!g.has(k))g.set(k,{nm:t.de,ca:t.ca,sc:t.sc,am:0,n:0});
+      const o=g.get(k);o.am+=t.am;o.n++;});
+    items=[...g.values()].sort((a,b)=>b.am-a.am).slice(0,5)
+      .map(o=>({nm:o.nm,meta:`${o.ca} › ${o.sc} · ${o.n} entr${o.n>1?'ies':'y'}`,am:o.am}));
+  }
+  document.getElementById('top5').innerHTML=items.map((o,i)=>`
+    <div class="t5"><span class="rk">${String(i+1).padStart(2,'0')}</span>
+      <span class="nm">${o.nm}<em>${o.meta}</em></span>
+      <span class="vl">${fmt(o.am)}<em>${(o.am/tot*100).toFixed(1)}% of period</em></span></div>`).join('')
+    || '<p class="dimnum" style="padding:14px 0">Nothing logged in this period.</p>';
+}
+
+/* ---- Category breakdown ---- */
+function renderBreakdown(){
+  const ms=monthsIn(), rows=yearRows();
+  const cols=`minmax(190px,1fr) ${ms.map(()=>'74px').join(' ')} 86px 74px`;
+  const val=(f)=>ms.map(m=>sum(rows.filter(t=>t.mo===m&&f(t))));
+
+  document.getElementById('bdhead').style.setProperty('--cols',cols);
+  document.getElementById('bdhead').innerHTML =
+    `<span>Category / Sub-Category</span>` +
+    ms.map(m=>`<span class="${state.mo===m?'sel':''}">${MN[m]}</span>`).join('') +
+    `<span>Total</span><span>MoM</span>`;
+
+  const cellCols = t => `<span class="num">${fmt(t)}</span>`;
+  const rowHTML=(label,vals,twisty,flag)=>{
+    const tot=vals.reduce((a,b)=>a+b,0);
+    const last=vals[vals.length-1], prev=vals.length>1?vals[vals.length-2]:0;
+    return `<span class="nm-cell">${twisty?'<span class="tw">▶</span>':'<span class="tw"></span>'}<span>${label}${flag||''}</span></span>`
+      + vals.map((v,i)=>`<span class="num ${v?(ms[i]===state.mo?'selcol':'dimnum'):'zero'}">${v?fmt(v):'—'}</span>`).join('')
+      + `<span class="num ${tot?'':'zero'}">${tot?fmt(tot):'—'}</span>`
+      + `<span class="num">${chg(prev?pct(last,prev):null)}</span>`;
+  };
+
+  let html='';
+  const cats=Object.keys(TAXONOMY).map(c=>({
+    c, vals:val(t=>t.ca===c), tot:sum(rows.filter(t=>t.ca===c))
+  })).sort((a,b)=>b.tot-a.tot);
+
+  cats.forEach((C,ci)=>{
+    if(!C.tot && !state.showUnused) return;
+    html+=`<button class="cellrow lvl1 ${C.tot?'':'unused'}" style="--cols:${cols}" data-t="c" data-i="${ci}">${rowHTML(C.c,C.vals,true)}</button>`;
+    TAXONOMY[C.c].forEach((S,si)=>{
+      const svals=val(t=>t.ca===C.c&&t.sc===S), stot=svals.reduce((a,b)=>a+b,0);
+      if(!stot && !state.showUnused) return;
+      html+=`<button class="cellrow lvl2 kid c${ci} ${stot?'':'unused'}" style="--cols:${cols}" hidden data-t="s" data-i="${ci}-${si}">${rowHTML(S,svals,true)}</button>`;
+      const items=rows.filter(t=>t.ca===C.c&&t.sc===S).sort((a,b)=>b.am-a.am);
+      items.forEach(t=>{
+        const flag=(t.de.toLowerCase()==='petrol'&&t.sc==='Food')?'<span class="flag">check</span>':'';
+        html+=`<div class="cellrow lvl3 kid2 s${ci}-${si}" style="--cols:minmax(190px,1fr) 110px 86px" hidden>
+          <span class="nm-cell"><span class="tw"></span><span>${t.de}${flag}</span></span>
+          <span class="num dimnum">${MN[t.mo]} ${t.dy}, ${t.yr}</span>
+          <span class="num">${fmt(t.am)}</span></div>`;
+      });
+      if(!items.length) html+=`<div class="cellrow lvl3 kid2 s${ci}-${si}" style="--cols:1fr" hidden><span class="nm-cell" style="color:var(--faint)"><span class="tw"></span>No entries yet</span></div>`;
+    });
+  });
+  const bd=document.getElementById('bd');
+  bd.innerHTML=html;
+
+  const gv=val(()=>true);
+  const f=document.getElementById('bdfoot');
+  f.innerHTML=`<div class="cellrow" style="--cols:${cols}">${rowHTML('Total',gv,false)}</div>`;
+
+  bd.querySelectorAll('button.cellrow').forEach(btn=>btn.onclick=()=>{
+    const tw=btn.querySelector('.tw'), open=tw.classList.toggle('open');
+    if(btn.dataset.t==='c'){
+      const ci=btn.dataset.i;
+      bd.querySelectorAll('.kid.c'+ci).forEach(r=>r.hidden=!open);
+      if(!open){
+        bd.querySelectorAll('[class*="kid2 s'+ci+'-"]').forEach(r=>r.hidden=true);
+        bd.querySelectorAll('.kid.c'+ci+' .tw').forEach(t=>t.classList.remove('open'));
+      }
+    } else bd.querySelectorAll('.kid2.s'+btn.dataset.i).forEach(r=>r.hidden=!open);
+  });
+}
+
+/* ---- committed vs discretionary rule (shared) ---- */
+const COMMITTED_SC = new Set(['Papa','Ammi','Fahila','Electricity','Gas','Internet Bill','BC','Musfirah','Health Care/Medical','Maintenance','Babycare','Gulmohar']);
+const isDiscretionary = t => !COMMITTED_SC.has(t.sc) &&
+  !(t.sc==='Others' && !['Picnic','7up','Ice Cream Gift'].includes(t.de));
+
+/* ---- Savings opportunity ---- */
+function renderAvoid(){
+  const pool=viewRows().filter(isDiscretionary).sort((a,b)=>b.am-a.am);
+  const poolTot=sum(pool);
+  const top=pool.slice(0,10);
+  document.getElementById('avoid').innerHTML=
+    top.map((t,i)=>`<div class="t5"><span class="rk">${String(i+1).padStart(2,'0')}</span>
+      <span class="nm">${t.de}<em>${t.sc} · ${MN[t.mo]} ${t.dy}</em></span>
+      <span class="vl">${fmt(t.am)}</span></div>`).join('')
+    + `<div class="t5"><span class="rk"></span><span class="nm" style="color:var(--dim)">Discretionary pool this period</span>
+       <span class="vl">${fmt(poolTot)}<em>${(poolTot/(sum(viewRows())||1)*100).toFixed(0)}% of spend</em></span></div>`;
+}
+
+/* ---- Pareto ---- */
+function renderPareto(){
+  const rows=viewRows(), tot=sum(rows)||1;
+  const g=new Map();
+  rows.forEach(t=>{const k=t.de.toLowerCase();
+    if(!g.has(k))g.set(k,{de:t.de,am:0}); g.get(k).am+=t.am;});
+  const items=[...g.values()].sort((a,b)=>b.am-a.am);
+  let cum=0, kIdx=items.length;
+  const withCum=items.map((o,i)=>{cum+=o.am; if(cum>=0.8*tot && kIdx===items.length) kIdx=i+1; return {...o,cum};});
+  const max=items[0]?.am||1;
+  const shown=withCum.slice(0,8);
+  const restN=items.length-8, restV=tot-shown.reduce((a,o)=>a+o.am,0);
+  document.getElementById('pareto').innerHTML=`
+    <div class="pareto-bars">
+      ${shown.map((o,i)=>`<div class="pb ${i<kIdx?'':'rest'}">
+        <span class="pl" title="${o.de}">${o.de}</span>
+        <span class="ptrack"><span class="pfill" style="width:${o.am/max*100}%"></span></span>
+        <span class="pv">${fmt(o.am)}</span></div>`).join('')}
+      ${restN>0?`<div class="pb rest"><span class="pl" style="color:var(--dim)">+ ${restN} smaller</span>
+        <span class="ptrack"><span class="pfill" style="width:${restV/max*100}%"></span></span>
+        <span class="pv">${fmt(restV)}</span></div>`:''}
+    </div>
+    <div class="pareto-note"><b>${kIdx}</b> of ${items.length} line items (${(kIdx/items.length*100).toFixed(0)}%) make up <b>80%</b> of ${state.mo?MN[state.mo]:'the year'}'s spend. The other ${items.length-kIdx} are noise.</div>`;
+}
+
+/* ---- Weekday vs weekend ----
+   Excludes large committed bills (they land on arbitrary days and
+   swamp the signal); compares discretionary spend per CALENDAR day. */
+function renderWW(){
+  const rows=viewRows().filter(isDiscretionary);
+  const acc={wd:{s:0,n:0},we:{s:0,n:0}};
+  rows.forEach(t=>{
+    const dow=new Date(t.yr,t.mo-1,t.dy).getDay();
+    const k=(dow===0||dow===6)?'we':'wd';
+    acc[k].s+=t.am; acc[k].n++;
+  });
+  // count calendar weekday/weekend days across the selected span
+  const ms=state.mo?[state.mo]:monthsIn();
+  let wdDays=0, weDays=0;
+  ms.forEach(m=>{
+    const days=new Date(state.yr,m,0).getDate();
+    for(let d=1;d<=days;d++){ const dow=new Date(state.yr,m-1,d).getDay();
+      (dow===0||dow===6)?weDays++:wdDays++; }
+  });
+  const wdD=wdDays?acc.wd.s/wdDays:0, weD=weDays?acc.we.s/weDays:0;
+  const higher = weD>=wdD ? 'weekends' : 'weekdays';
+  const ratio = Math.min(weD,wdD)? Math.max(weD,wdD)/Math.min(weD,wdD):0;
+  document.getElementById('ww').innerHTML=`
+    <div class="ww-cards">
+      <div class="ww-c wd"><div class="wl">Weekdays</div>
+        <div class="wv">${fmt(Math.round(wdD))}</div><div class="ws">per day · ${fmt(acc.wd.s)} total</div></div>
+      <div class="ww-c we"><div class="wl">Weekends</div>
+        <div class="wv">${fmt(Math.round(weD))}</div><div class="ws">per day · ${fmt(acc.we.s)} total</div></div>
+    </div>
+    <div class="ww-verdict">Discretionary only, per calendar day. ${ratio?`<b>${ratio.toFixed(1)}× heavier on ${higher==='weekends'?'a weekend':'a weekday'}</b>`:'Roughly even.'} — bills are excluded so this reflects habit, not timing.</div>`;
+}
+
+/* ---- Fastest growing ---- */
+function renderGrow(){
+  const ms=monthsIn();
+  const box=document.getElementById('grow');
+  if(ms.length<2){ document.getElementById('growLab').textContent=''; box.innerHTML='<p class="microhint">Needs at least two months in the selected year.</p>'; return; }
+  const first=ms[0], last=ms[ms.length-1];
+  document.getElementById('growLab').textContent=`${MN[first]} → ${MN[last]}`;
+  const rows=yearRows();
+  const subs={};
+  rows.forEach(t=>{ subs[t.sc]=subs[t.sc]||{f:0,l:0,ca:t.ca};
+    if(t.mo===first) subs[t.sc].f+=t.am; if(t.mo===last) subs[t.sc].l+=t.am; });
+  const grow=Object.entries(subs).filter(([,v])=>v.f>0&&v.l>0)
+    .map(([s,v])=>({s,ca:v.ca,f:v.f,l:v.l,p:(v.l-v.f)/v.f*100}))
+    .sort((a,b)=>b.p-a.p).slice(0,5);
+  box.innerHTML=`<div class="grow-list">${grow.map(g=>`
+    <div class="grow-row"><span class="gn">${g.s}<em>${fmt(g.f)} → ${fmt(g.l)}</em></span>
+      <span class="gp ${g.p>=0?'up':'down'}">${g.p>=0?'+':''}${g.p.toFixed(0)}%</span></div>`).join('')}</div>`;
+}
+
+function render(){
+  renderChips(); renderKPIs(); renderMoM(); renderTop5(); renderBreakdown();
+  renderAvoid(); renderPareto(); renderWW(); renderGrow();
+}
+
+
+/* ---- theme toggle (session-persistent) ---- */
+let theme = 'dark';
+(function initTheme(){
+  const btn = document.getElementById('theme');
+  const apply = () => {
+    document.documentElement.setAttribute('data-theme', theme);
+    btn.title = theme==='dark' ? 'Switch to light theme' : 'Switch to dark theme';
+  };
+  btn.onclick = () => { theme = theme==='dark' ? 'light' : 'dark'; apply(); };
+  apply();
+})();
+
+boot();
+</script>
+</body>
+</html>

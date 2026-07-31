@@ -1,0 +1,26 @@
+// SERVICE-ACCOUNT MODE (recommended) — keeps the sheet PRIVATE.
+// To use: rename to sheet.js (replacing the API-key version),
+// keep googleapis in package.json, and set env vars
+// GS_CLIENT_EMAIL, GS_PRIVATE_KEY, SHEET_ID.
+
+const { google } = require('googleapis');
+const toISO = v => typeof v === 'number'
+  ? new Date(Date.UTC(1899,11,30)+v*86400000).toISOString().slice(0,10) : v;
+
+exports.handler = async () => {
+  try {
+    const auth = new google.auth.JWT(
+      process.env.GS_CLIENT_EMAIL, null,
+      (process.env.GS_PRIVATE_KEY||'').replace(/\\n/g,'\n'),
+      ['https://www.googleapis.com/auth/spreadsheets.readonly']);
+    const sheets = google.sheets({ version:'v4', auth });
+    const res = await sheets.spreadsheets.values.get({
+      spreadsheetId: process.env.SHEET_ID, range:'Data!A:F',
+      valueRenderOption:'UNFORMATTED_VALUE' });
+    const [header,...rows] = res.data.values || [[]];
+    const out = rows.filter(r=>r&&r.length).map(r=>{
+      const o={}; header.forEach((h,i)=>o[h]=r[i]??''); 
+      if('Date/Month' in o) o['Date/Month']=toISO(o['Date/Month']); return o; });
+    return { statusCode:200, headers:{'Content-Type':'application/json','Cache-Control':'public, max-age=60'}, body:JSON.stringify(out) };
+  } catch(e){ return { statusCode:500, headers:{'Content-Type':'application/json'}, body:JSON.stringify({error:e.message}) }; }
+};
